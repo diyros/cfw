@@ -23,7 +23,14 @@ jobs:
           curl -s https://api.github.com/repos/cmliu/edgetunnel/contents \
            | jq -r '.[] | select(.name | test("\\.(js?)$")) | .download_url' > urls.txt
           echo "Found playlist URLs:"
-          cat urls.txt           
+          cat urls.txt        
+
+      - name: Fetch _worker.js file list from source repo
+        run: |
+          curl -s https://api.github.com/repos/byJoey/cfnew/contents \
+           | jq -r '.[] | select(.name | test("\\.(js?)$")) | .download_url' > urls.txt
+          echo "Found playlist URLs:"
+          cat urls.txt         
 
       - name: Download _worker.js files to ROOT directory
         run: |
