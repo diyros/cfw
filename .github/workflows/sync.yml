@@ -16,6 +16,7 @@ jobs:
       - name: Checkout your repo
         uses: actions/checkout@v6
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Fetch _worker.js file list from source repo
