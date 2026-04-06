@@ -1,0 +1,56 @@
+name: Sync edgetunnel to Root
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # 每小时执行一次
+  workflow_dispatch:      # 手动触发
+
+permissions:
+  contents: write   # ⬅⬅⬅ 允许 Actions 推送到仓库
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout your repo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Fetch _worker.js file list from source repo
+        run: |
+          curl -s https://api.github.com/repos/cmliu/edgetunnel/contents \
+           | jq -r '.[] | select(.name | test("\\.(js?)$")) | .download_url' > urls.txt
+          echo "Found playlist URLs:"
+          cat urls.txt           
+
+      - name: Download _worker.js files to ROOT directory
+        run: |
+          while read -r url; do
+            [ -z "$url" ] && continue
+            filename=$(basename "$url")
+            echo "Downloading $filename"
+            curl -L -o "$filename" "$url"
+          done < urls.txt
+
+
+      - name: Commit and Push if changed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add *.md *.js 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+
+          git commit -m "Update _worker.js"
+
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:${GITHUB_REF#refs/heads/}
